@@ -1,0 +1,262 @@
+local library = loadstring(game:HttpGet('https://raw.githubusercontent.com/salamalecoskibidi1234/mgrerbnhj/refs/heads/main/sregerwge'))()
+local Window = library:CreateWindow({
+   Name = "🌋🌋Volcano Hub Fisch",
+   Icon = 0,
+   LoadingTitle = "Volcano Hub Loading",
+   LoadingSubtitle = "by nukii",
+   Theme = "Default",
+
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false,
+
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = nil,
+      FileName = "Big Hub"
+   },
+
+   Discord = {
+      Enabled = true,
+      Invite = "https://SUa2vydmgS",
+      RememberJoins = true
+   },
+
+   KeySystem = true,
+   KeySettings = {
+      Title = "🌋🌋Volcano Hub Key System",
+      Subtitle = "Key System",
+      Note = "Looking for key? Join discord discord.gg/SUa2vydmgS",
+      FileName = "Key", 
+      SaveKey = true,
+      GrabKeyFromSite = true,
+      Key = {"https://raw.githubusercontent.com/salamalecoskibidi1234/key/refs/heads/main/sdfrenfr", "admseboosterusemessakey"}
+   }
+})
+
+local UniversalTab = Window:CreateTab("Universal", 4483362458)
+local UniversalSection = UniversalTab:CreateSection("Body")
+local Slider = UniversalTab:CreateSlider({
+   Name = "Speed",
+   Range = {0, 300},
+   Increment = 1,
+   Suffix = "Speed",
+   CurrentValue = 16,
+   Flag = "Speed",
+   Callback = function(Value)
+      game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+   end,
+})
+
+local AutoFarmTab = Window:CreateTab("Auto Farm", 4483362458)
+local AFSection = AutoFarmTab:CreateSection("Auto Farm")
+
+local Players = game:GetService("Players")
+local GuiService = game:GetService("GuiService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local LocalPlayer = Players.LocalPlayer
+local Enabled = false               
+local InstantShakeEnabled = false 
+local Rod = nil
+local Progress = false
+local Finished = false
+local LoopPosition = nil
+
+function EquipRod()
+    local rod = LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
+    if rod and rod.Name:lower():find("rod") then
+        LocalPlayer.Character.Humanoid:EquipTool(rod)
+        Rod = rod
+    else
+        for _, item in ipairs(LocalPlayer.Backpack:GetChildren()) do
+            if item:IsA("Tool") and item.Name:lower():find("rod") then
+                LocalPlayer.Character.Humanoid:EquipTool(item)
+                Rod = item
+                break
+            end
+        end
+    end
+end
+
+function AutoFish5()
+    local PlayerGUI = LocalPlayer:WaitForChild("PlayerGui")
+    local shakeUI = PlayerGUI:FindFirstChild("shakeui")
+    if shakeUI and shakeUI.Enabled then
+        local safezone = shakeUI:FindFirstChild("safezone")
+        if safezone then
+            local button = safezone:FindFirstChild("button")
+            if button and button:IsA("ImageButton") and button.Visible then
+                local pos = button.AbsolutePosition
+                local size = button.AbsoluteSize
+                VirtualInputManager:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2, 0, true, LocalPlayer, 0)
+                VirtualInputManager:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2, 0, false, LocalPlayer, 0)
+            end
+        end
+    end
+end
+
+function ToggleFarm(Value)
+    Enabled = Value
+    if Enabled then
+        EquipRod()
+        LoopPosition = LocalPlayer.Character.HumanoidRootPart.Position
+
+        task.spawn(function()
+            while Enabled do
+                if not Progress and Rod then
+                    Progress = true
+                    task.wait(0.5)
+                    Rod.events.reset:FireServer()
+                    Rod.events.cast:FireServer(100.5)
+                end
+                task.wait()
+            end
+        end)
+
+        task.spawn(function()
+            while Enabled do
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    LocalPlayer.Character.HumanoidRootPart.Position = LoopPosition
+                end
+                task.wait(0.75)
+            end
+        end)
+
+        if InstantShakeEnabled then
+            task.spawn(function()
+                while Enabled and InstantShakeEnabled do
+                    AutoFish5()
+                    task.wait(0.1)
+                end
+            end)
+        end
+    else
+        Finished = false
+        Progress = false
+        GuiService.SelectedObject = nil
+        if Rod then
+            Rod.events.reset:FireServer()
+        end
+    end
+end
+
+
+function ToggleInstantShake(Value)
+    InstantShakeEnabled = Value
+    if Enabled and InstantShakeEnabled then
+        task.spawn(function()
+            while Enabled and InstantShakeEnabled do
+                AutoFish5()
+                task.wait(0.1)
+            end
+        end)
+    end
+end
+
+LocalPlayer.Character.ChildAdded:Connect(function(child)
+    if child:IsA("Tool") and child.Name:lower():find("rod") then
+         Rod = child
+    end
+end)
+
+LocalPlayer.Character.ChildRemoved:Connect(function(child)
+    if child == Rod then
+         Enabled = false
+         Finished = false
+         Progress = false
+         Rod = nil
+         GuiService.SelectedObject = nil
+    end
+end)
+
+LocalPlayer.PlayerGui.DescendantAdded:Connect(function(descendant)
+    if Enabled then
+        if descendant.Name == "button" and descendant.Parent and descendant.Parent.Name == "safezone" then
+            task.wait(0.3)
+            GuiService.SelectedObject = descendant
+            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+            task.wait(0.1)
+            GuiService.SelectedObject = nil
+        elseif descendant.Name == "playerbar" and descendant.Parent and descendant.Parent.Name == "bar" then
+            Finished = true
+            descendant:GetPropertyChangedSignal("Position"):Wait()
+            ReplicatedStorage.events.reelfinished:FireServer(100, true)
+        end
+    end
+end)
+
+LocalPlayer.PlayerGui.DescendantRemoving:Connect(function(descendant)
+    if descendant.Name == "reel" then
+         Finished = false
+         Progress = false
+    end
+end)
+
+local NewRod = LocalPlayer.Character:FindFirstChildWhichIsA("Tool")
+if NewRod and NewRod.Name:lower():find("rod") then
+    Rod = NewRod
+end
+
+AutoFarmTab:CreateToggle({
+   Name = "AutoFarm",
+   CurrentValue = false,
+   Flag = "AutoFarm",
+   Callback = function(Value)
+       ToggleFarm(Value)
+   end,
+})
+
+AutoFarmTab:CreateToggle({
+   Name = "Instant Shake",
+   CurrentValue = false,
+   Flag = "Instant Shake",
+   Callback = function(Value)
+       ToggleInstantShake(Value)
+   end,
+})
+
+local TravelTab = Window:CreateTab("Travel", 4483362458)
+local TravelSection = TravelTab:CreateSection("Locations")
+local ancientIslandPosition = Vector3.new(5798, 135, 405)
+TravelTab:CreateButton({
+   Name = "Ancient Island",
+   Callback = function()
+      if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+         LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(ancientIslandPosition)
+      end
+   end,
+})
+
+local SellAllTab = Window:CreateTab("Sell Fish", 4483362458)
+local SellSection = SellAllTab:CreateSection("TP Merchant")
+local MerchantPosition = Vector3.new(466, 150, 230)
+SellAllTab:CreateButton({
+   Name = "TP To Merchant to sell fish",
+   Callback = function()
+      if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+         LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(MerchantPosition)
+      end
+   end,
+})
+
+local Toggle = UniversalTab:CreateToggle({
+    Name = "Anti Afk",
+    CurrentValue = false,
+    Flag = "Anti Afk",
+    Callback = function(Value)
+        if Value then
+            getgenv().AntiAfkConnection = game:service'Players'.LocalPlayer.Idled:connect(function()
+                local bb = game:service'VirtualUser'
+                bb:CaptureController()
+                bb:ClickButton2(Vector2.new())
+            end)
+        else
+            if getgenv().AntiAfkConnection then
+                getgenv().AntiAfkConnection:Disconnect()
+                getgenv().AntiAfkConnection = nil
+            end
+        end
+    end,
+})
